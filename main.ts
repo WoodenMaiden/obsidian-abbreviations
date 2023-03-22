@@ -10,23 +10,22 @@ const EventsTriggeringExpandMap = new Map<EventsTriggeringExpand, string>([
 ]); 
 
 interface MyPluginSettings {
-	abbreviations: Map<string, string>;
+	abbreviations: Record<string, string>;
 	eventsTriggeringExpand: EventsTriggeringExpand;
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	abbreviations: new Map<string, string>([
-		['e.g.', 'for example'],
-		['atm', 'at the moment'],
-		['imo', 'in my opinion'],
-		['cmpnt', 'component'],
-		['w/', 'with'],
-		['w/o', 'without'],
-		['ily', 'I love you'],
-		['srv', 'server'],
-		['mvc', 'Model View Controller'],
-		['k8s', 'Kubernetes']
-	]),
+	abbreviations: {
+		'e.g.': 'for example',
+		'atm' : 'at the moment',
+		'imo' : 'in my opinion',
+		'w/'  : 'with',
+		'w/o' : 'without',
+		'ily' : 'I love you',
+		'srv' : 'server',
+		'mvc' : 'Model View Controller',
+		'k8s' : 'Kubernetes'
+	},
 	eventsTriggeringExpand: 'ON_SPACE',
 }
 
@@ -166,41 +165,49 @@ class SampleSettingTab extends PluginSettingTab {
 					.setIcon('plus')
 					.onClick(async () => {
 						console.log('add button clicked')
-						this.plugin.settings.abbreviations.set('', '');
+						this.plugin.settings.abbreviations[''] = '';
 						await this.plugin.saveSettings();
+						this.display();
 					})
 			)
 
-		this.plugin.settings.abbreviations?.forEach((expansion, abbrevation) => {
+		Object.entries(this.plugin.settings.abbreviations).forEach((entry) => {
+			const [ abbrevation, expansion ] = entry;
+
+			// Abbrevation field
 			new Setting(containerEl)
-				.addTextArea(textAreaAbbrev =>
+				.addText(textAreaAbbrev =>
 					textAreaAbbrev
 						.setPlaceholder('Abbrevation')
 						.setValue(abbrevation)
 						.onChange(async (value: string) => {
-							this.plugin.settings.abbreviations.delete(abbrevation);
-							this.plugin.settings.abbreviations.set(value, expansion);
+							delete this.plugin.settings.abbreviations[abbrevation];
+							this.plugin.settings.abbreviations[value] = expansion;
 							await this.plugin.saveSettings();
 						}
 					)
 				)
-				.addTextArea(textAreaExpansion =>
+			// Expansion field
+				.addText(textAreaExpansion =>
 					textAreaExpansion
 						.setPlaceholder('Meaning')
 						.setValue(expansion)
 						.onChange(async (value: string) => {
-							this.plugin.settings.abbreviations.set(abbrevation, value);
+							this.plugin.settings.abbreviations[abbrevation] = value;
 							await this.plugin.saveSettings();
 						}
 					)
 				)
+			// Remove button
 				.addButton(removeButton =>
 					removeButton
 						.setIcon('cross')
 						.onClick(async () => {
-							this.plugin.settings.abbreviations.delete(abbrevation);
+							delete this.plugin.settings.abbreviations[abbrevation];
 							await this.plugin.saveSettings();
-						})
+							this.display();
+						}
+					)
 				)
 				
 		})
