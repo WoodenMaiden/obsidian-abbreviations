@@ -2,12 +2,32 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Set
 
 // Remember to rename these classes and interfaces!
 
+type EventsTriggeringExpand = 'ON_SPACE' | 'ON_ENTER';
+
+const EventsTriggeringExpandMap = new Map<EventsTriggeringExpand, string>([
+	['ON_SPACE', 'Hitting Space'],
+	['ON_ENTER', 'Hitting Enter']
+]); 
+
 interface MyPluginSettings {
-	mySetting: string;
+	abbreviations: Map<string, string>;
+	eventsTriggeringExpand: EventsTriggeringExpand;
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+	abbreviations: new Map<string, string>([
+		['e.g.', 'for example'],
+		['atm', 'at the moment'],
+		['imo', 'in my opinion'],
+		['cmpnt', 'component'],
+		['w/', 'with'],
+		['w/o', 'without'],
+		['ily', 'I love you'],
+		['srv', 'server'],
+		['mvc', 'Model View Controller'],
+		['k8s', 'Kubernetes']
+	]),
+	eventsTriggeringExpand: 'ON_SPACE',
 }
 
 export default class MyPlugin extends Plugin {
@@ -118,20 +138,71 @@ class SampleSettingTab extends PluginSettingTab {
 	display(): void {
 		const {containerEl} = this;
 
+		console.log('displaying settings tab', this.plugin.settings)
+
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+		containerEl.createEl('h2', {text: 'Abbrevations Plugin - Settings'});
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
+			.setName('Event triggering expand')
+			.setDesc('Event that triggers the expansion of abbrevations')
+			.addDropdown(dropdown =>
+				dropdown.addOptions(
+					Object.fromEntries(EventsTriggeringExpandMap)
+				)
+				.setValue(this.plugin.settings.eventsTriggeringExpand)
+				.onChange(async (value: EventsTriggeringExpand) => {
+					this.plugin.settings.eventsTriggeringExpand = value;
 					await this.plugin.saveSettings();
-				}));
+				})
+			);
+
+		new Setting(containerEl)
+			.setName('Abbrevations')
+			.setDesc('Add abbrevations to be replaced in your notes')
+			.addButton(addButton => 
+				addButton
+					.setIcon('plus')
+					.onClick(async () => {
+						console.log('add button clicked')
+						this.plugin.settings.abbreviations.set('', '');
+						await this.plugin.saveSettings();
+					})
+			)
+
+		this.plugin.settings.abbreviations?.forEach((expansion, abbrevation) => {
+			new Setting(containerEl)
+				.addTextArea(textAreaAbbrev =>
+					textAreaAbbrev
+						.setPlaceholder('Abbrevation')
+						.setValue(abbrevation)
+						.onChange(async (value: string) => {
+							this.plugin.settings.abbreviations.delete(abbrevation);
+							this.plugin.settings.abbreviations.set(value, expansion);
+							await this.plugin.saveSettings();
+						}
+					)
+				)
+				.addTextArea(textAreaExpansion =>
+					textAreaExpansion
+						.setPlaceholder('Meaning')
+						.setValue(expansion)
+						.onChange(async (value: string) => {
+							this.plugin.settings.abbreviations.set(abbrevation, value);
+							await this.plugin.saveSettings();
+						}
+					)
+				)
+				.addButton(removeButton =>
+					removeButton
+						.setIcon('cross')
+						.onClick(async () => {
+							this.plugin.settings.abbreviations.delete(abbrevation);
+							await this.plugin.saveSettings();
+						})
+				)
+				
+		})
 	}
 }

@@ -1,11 +1,10 @@
 {
-	"id": "obsidian-sample-plugin",
-	"name": "Sample Plugin",
+	"id": "obsidian-abbrevations-plugin",
+	"name": "Abbrevations Plugin",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "This plugin allows you to create abbreviations that will be expanded after hitting `Space`.",
+	"author": "Yann POMIE (WoodenMaiden)",
+	"authorUrl": "https://github.com/WoodenMaiden/obsidian-abbreviations",
 	"isDesktopOnly": false
 }
