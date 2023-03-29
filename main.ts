@@ -1,3 +1,4 @@
+import { ExpansionEntrySetting } from 'ExpansionEntrySetting';
 import { App, DropdownComponent, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, EditorPosition, Setting } from 'obsidian';
 
 
@@ -56,7 +57,7 @@ export default class AbbreviationPlugin extends Plugin {
 	 * @param position position of the cursor
 	 * @returns {AbbreviationLocation | null}
 	 */
-	private detectAbbrevation(line: string, position: EditorPosition): AbbreviationLocation | null {
+	private detectAbbreviation(line: string, position: EditorPosition): AbbreviationLocation | null {
 		let wordStart = position.ch;
 		
 		do {
@@ -85,7 +86,7 @@ export default class AbbreviationPlugin extends Plugin {
 		// This adds a complex command that can check whether the current state of the app allows execution of the command
 		this.addCommand({
 			id: 'choose-abbreviation-expansion-mode',
-			name: 'Choose how to expand abbrevations',
+			name: 'Choose how to expand abbreviations',
 			callback: () => {
 				new ChooseAbbreviationExpansionModal(this.app, this).open();
 			}
@@ -110,7 +111,7 @@ export default class AbbreviationPlugin extends Plugin {
 				event.code == 'Space' && this.settings.eventsTriggeringExpand === 'ON_SPACE'
 //				|| event.code == 'Enter' && this.settings.eventsTriggeringExpand === 'ON_ENTER'
 			) {
-				const abbreviationLocation = this.detectAbbrevation(line, position);
+				const abbreviationLocation = this.detectAbbreviation(line, position);
 				console.log(`abbreviation: ${JSON.stringify(abbreviationLocation)}`)
 				if (abbreviationLocation) {
 					view.editor.replaceRange(abbreviationLocation.abbreviation, abbreviationLocation.position, position);
@@ -184,11 +185,11 @@ class AbbreviationSettingTab extends PluginSettingTab {
 		
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Abbrevations Plugin - Settings'});
+		containerEl.createEl('h2', {text: 'Abbreviations Plugin - Settings'});
 
 		new Setting(containerEl)
 			.setName('Event triggering expand')
-			.setDesc('Event that triggers the expansion of abbrevations')
+			.setDesc('Event that triggers the expansion of abbreviations')
 			.addDropdown(dropdown =>
 				dropdown.addOptions(
 					Object.fromEntries(EventsTriggeringExpandMap)
@@ -201,8 +202,8 @@ class AbbreviationSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName('Abbrevations')
-			.setDesc('Add abbrevations to be replaced in your notes')
+			.setName('Abbreviations')
+			.setDesc('Add abbreviations to be replaced in your notes')
 			.addButton(addButton => 
 				addButton
 					.setIcon('plus')
@@ -232,46 +233,14 @@ class AbbreviationSettingTab extends PluginSettingTab {
 			);
 
 
+		// Here goes all the abbreviations entries
 		Object.entries(this.plugin.settings.abbreviations).forEach((entry) => {
-			const [ abbrevation, expansion ] = entry;
+			const [ abbreviation, expansion ] = entry;
 
-			// Abbrevation field
-			new Setting(containerEl)
-				.addText(textAreaAbbrev =>
-					textAreaAbbrev
-						.setPlaceholder('Abbrevation')
-						.setValue(abbrevation)
-						.onChange(/*async*/ (value: string) => {
-							delete this.plugin.settings.abbreviations[abbrevation];
-							this.plugin.settings.abbreviations[value] = expansion;
-							//await this.plugin.saveSettings();
-						}
-					)
-				)
-			// Expansion field
-				.addText(textAreaExpansion =>
-					textAreaExpansion
-						.setPlaceholder('Meaning')
-						.setValue(expansion)
-						.onChange(/*async*/ (value: string) => {
-							this.plugin.settings.abbreviations[abbrevation] = value;
-							//await this.plugin.saveSettings();
-						}
-					)
-				)
-			// Remove button
-				.addExtraButton(removeButton =>
-					removeButton
-						.setIcon('cross')
-						.setTooltip('Remove')
-						.onClick(/*async*/ () => {
-							delete this.plugin.settings.abbreviations[abbrevation];
-							// await this.plugin.saveSettings();
-							this.display();
-						}
-					)
-				)
-				
+			new ExpansionEntrySetting(containerEl, {
+				abbreviation,
+				expansion
+			})
 		})
 	}
 }

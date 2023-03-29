@@ -1,6 +1,6 @@
 {
-	"id": "obsidian-abbrevations-plugin",
-	"name": "Abbrevations Plugin",
+	"id": "obsidian-abbreviations-plugin",
+	"name": "Abbreviations Plugin",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "This plugin allows you to create abbreviations that will be expanded after hitting `Space`.",
