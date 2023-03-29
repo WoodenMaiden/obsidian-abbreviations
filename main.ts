@@ -1,4 +1,4 @@
-import { App, DropdownComponent, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, DropdownComponent, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, EditorPosition, Setting } from 'obsidian';
 
 
 type EventsTriggeringExpand = 'ON_SPACE' | 'ON_ENTER';
@@ -11,6 +11,11 @@ const EventsTriggeringExpandMap = new Map<EventsTriggeringExpand, string>([
 interface AbbreviationPluginSettings {
 	abbreviations: Record<string, string>;
 	eventsTriggeringExpand: EventsTriggeringExpand;
+}
+
+interface AbbreviationLocation {
+	position: EditorPosition;
+	abbreviation: string;
 }
 
 const DEFAULT_SETTINGS: AbbreviationPluginSettings = {
@@ -34,6 +39,46 @@ const DEFAULT_SETTINGS: AbbreviationPluginSettings = {
 export default class AbbreviationPlugin extends Plugin {
 	settings: AbbreviationPluginSettings;
 
+	/**
+	 * Detects an abbreviation at the left of the cursor, returns its meaning and starting position
+	 * returns null if no abbreviation is found
+	 * 
+	 * example (lets assume atm is in the list of abbreviations):
+	 * 			               v cursor				
+	 * > what are you doing atm|
+	 * ☝️ this will detect atm
+	 * 
+	 * but not here:
+	 * 							v cursor 
+	 * > what are you doing atm |
+	 * 
+	 * @param line line of text 
+	 * @param position position of the cursor
+	 * @returns {AbbreviationLocation | null}
+	 */
+	private detectAbbrevation(line: string, position: EditorPosition): AbbreviationLocation | null {
+		let wordStart = position.ch;
+		
+		do {
+			const previous = (wordStart - 1 < 0)? 0: wordStart - 1;
+			if (/\s/.test(line[previous])) break;
+
+			--wordStart;
+		} while (wordStart > 0);
+		
+		const word = line.substring(wordStart, position.ch);
+		console.log(`word: "${word}"`)
+		
+		if (word in this.settings.abbreviations)
+			return {
+				position: { line: position.line, ch: wordStart },
+				abbreviation: this.settings.abbreviations[word]
+			};
+		
+		return null;
+		
+	}
+
 	async onload() {
 		await this.loadSettings();
 		
@@ -49,6 +94,31 @@ export default class AbbreviationPlugin extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new AbbreviationSettingTab(this.app, this));
 
+		this.registerDomEvent(document, 'keydown', (event: KeyboardEvent) => {
+
+			const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+			if (!view) return;
+
+			const editor = view.editor;
+			const position = editor.getCursor()
+																					
+			const line = editor.getLine(position.line).substring(0, position.ch) 
+
+			console.log(`line: "${line}"\npos: ${JSON.stringify(position)}`)
+			
+			if (
+				event.code == 'Space' && this.settings.eventsTriggeringExpand === 'ON_SPACE'
+//				|| event.code == 'Enter' && this.settings.eventsTriggeringExpand === 'ON_ENTER'
+			) {
+				const abbreviationLocation = this.detectAbbrevation(line, position);
+				console.log(`abbreviation: ${JSON.stringify(abbreviationLocation)}`)
+				if (abbreviationLocation) {
+					view.editor.replaceRange(abbreviationLocation.abbreviation, abbreviationLocation.position, position);
+					return;
+				}
+
+			}
+		})
 	}
 
 	onunload() {
@@ -139,10 +209,28 @@ class AbbreviationSettingTab extends PluginSettingTab {
 					.onClick(async () => {
 						console.log('add button clicked')
 						this.plugin.settings.abbreviations[''] = '';
-						this.plugin.saveSettings();
 						this.display();
 					})
 			)
+			.addExtraButton(saveButton =>
+				saveButton
+					.setIcon('save')
+					.setTooltip('Save')
+					.onClick(async () => {
+						this.plugin.saveSettings();
+					})
+			)
+			.addExtraButton(resetButton =>
+				resetButton
+					.setIcon('reset')
+					.setTooltip('Reset to defaults')
+					.onClick(async () => {
+						this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS);
+						await this.plugin.saveSettings();
+						this.display();
+					})
+			);
+
 
 		Object.entries(this.plugin.settings.abbreviations).forEach((entry) => {
 			const [ abbrevation, expansion ] = entry;
@@ -153,10 +241,10 @@ class AbbreviationSettingTab extends PluginSettingTab {
 					textAreaAbbrev
 						.setPlaceholder('Abbrevation')
 						.setValue(abbrevation)
-						.onChange(async (value: string) => {
+						.onChange(/*async*/ (value: string) => {
 							delete this.plugin.settings.abbreviations[abbrevation];
 							this.plugin.settings.abbreviations[value] = expansion;
-							await this.plugin.saveSettings();
+							//await this.plugin.saveSettings();
 						}
 					)
 				)
@@ -165,19 +253,20 @@ class AbbreviationSettingTab extends PluginSettingTab {
 					textAreaExpansion
 						.setPlaceholder('Meaning')
 						.setValue(expansion)
-						.onChange(async (value: string) => {
+						.onChange(/*async*/ (value: string) => {
 							this.plugin.settings.abbreviations[abbrevation] = value;
-							await this.plugin.saveSettings();
+							//await this.plugin.saveSettings();
 						}
 					)
 				)
 			// Remove button
-				.addButton(removeButton =>
+				.addExtraButton(removeButton =>
 					removeButton
 						.setIcon('cross')
-						.onClick(async () => {
+						.setTooltip('Remove')
+						.onClick(/*async*/ () => {
 							delete this.plugin.settings.abbreviations[abbrevation];
-							await this.plugin.saveSettings();
+							// await this.plugin.saveSettings();
 							this.display();
 						}
 					)
