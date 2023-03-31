@@ -1,5 +1,5 @@
-import { ExpansionEntrySetting } from 'ExpansionEntrySetting';
 import { App, DropdownComponent, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, EditorPosition, Setting } from 'obsidian';
+import { Expansion, ExpansionEntrySetting } from 'ExpansionEntrySetting';
 
 
 type EventsTriggeringExpand = 'ON_SPACE' | 'ON_ENTER';
@@ -10,29 +10,61 @@ const EventsTriggeringExpandMap = new Map<EventsTriggeringExpand, string>([
 ]); 
 
 interface AbbreviationPluginSettings {
-	abbreviations: Record<string, string>;
+	abbreviations: Record<string, Expansion>;
 	eventsTriggeringExpand: EventsTriggeringExpand;
 }
 
 interface AbbreviationLocation {
 	position: EditorPosition;
-	abbreviation: string;
+	abbreviation: Expansion;
 }
 
 const DEFAULT_SETTINGS: AbbreviationPluginSettings = {
 	abbreviations: {
-		'eg.': 'for example',
-		'atm' : 'at the moment',
-		'imo' : 'in my opinion',
-		'w/'  : 'with',
-		'w/o' : 'without',
-		'ily' : 'I love you',
-		'mvc' : 'Model View Controller',
-		'k8s' : 'Kubernetes',
-		'rs'  : 'Rust',
-		'js'  : 'JavaScript',
-		'ts'  : 'TypeScript',
-		'py'  : 'Python'
+		'eg.': {
+			value: 'for example',
+			isEnabled: true
+		},
+		'atm' : {
+			value: 'at the moment',
+			isEnabled: true
+		},
+		'imo' : {
+			value: 'in my opinion',
+			isEnabled: true
+		},
+		'w/'  : {
+			value: 'with',
+			isEnabled: true
+		},
+		'w/o' : {
+			value: 'without',
+			isEnabled: true
+		},
+		'ily' : {
+			value: 'I love you',
+			isEnabled: true
+		},
+		'k8s' : {
+			value: 'Kubernetes',
+			isEnabled: true
+		},
+		'rs'  : {
+			value: 'Rust',
+			isEnabled: true
+		},
+		'js'  : { 
+			value: 'JavaScript',
+			isEnabled: true
+		},
+		'ts'  : {
+			value: 'TypeScript',
+			isEnabled: true
+		},
+		'py'  : {
+			value: 'Python',
+			isEnabled: true
+		}
 	},
 	eventsTriggeringExpand: 'ON_SPACE',
 }
@@ -77,7 +109,6 @@ export default class AbbreviationPlugin extends Plugin {
 			};
 		
 		return null;
-		
 	}
 
 	async onload() {
@@ -111,8 +142,8 @@ export default class AbbreviationPlugin extends Plugin {
 			) {
 				const abbreviationLocation = this.detectAbbreviation(line, position);
 				console.log(`abbreviation: ${JSON.stringify(abbreviationLocation)}`)
-				if (abbreviationLocation) {
-					view.editor.replaceRange(abbreviationLocation.abbreviation, abbreviationLocation.position, position);
+				if (abbreviationLocation?.abbreviation.isEnabled) {
+					view.editor.replaceRange(abbreviationLocation.abbreviation.value, abbreviationLocation.position, position);
 					return;
 				}
 
@@ -192,6 +223,8 @@ class AbbreviationSettingTab extends PluginSettingTab {
 				})
 			);
 
+		containerEl.createEl('h3', {text: 'Abbreviations list'});
+		
 		new Setting(containerEl)
 			.setName('Abbreviations')
 			.setDesc('Add abbreviations to be replaced in your notes')
@@ -200,7 +233,7 @@ class AbbreviationSettingTab extends PluginSettingTab {
 					.setIcon('plus')
 					.onClick(() => {
 						console.log('add button clicked')
-						this.plugin.settings.abbreviations[''] = '';
+						this.plugin.settings.abbreviations[''].value = '';
 						this.display();
 					})
 			)
@@ -212,7 +245,6 @@ class AbbreviationSettingTab extends PluginSettingTab {
 						this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS);
 						await this.plugin.saveSettings();
 						this.display();
-						this.plugin.saveSettings()
 					})
 			);
 
@@ -220,25 +252,29 @@ class AbbreviationSettingTab extends PluginSettingTab {
 		// Here goes all the abbreviations entries
 		Object.entries(this.plugin.settings.abbreviations).forEach((entry) => {
 			const [ abbreviation, expansion ] = entry;
-
 			new ExpansionEntrySetting(containerEl, {
 				abbreviation,
 				expansion,
 				onRemove: async () => {
 					delete this.plugin.settings.abbreviations[abbreviation];
 					this.display();
-					this.plugin.saveSettings()
+					await this.plugin.saveSettings()
 				},
 				onAbbreviationEdit: async (newAbbreviation: string, oldAbbreviation: string) => {
 					this.plugin.settings.abbreviations[newAbbreviation] = this.plugin.settings.abbreviations[abbreviation];
 					delete this.plugin.settings.abbreviations[oldAbbreviation];
 					this.display();
-					this.plugin.saveSettings()
+					await this.plugin.saveSettings()
 				},
 				onExpansionEdit: async (newExpansion: string) => {
-					this.plugin.settings.abbreviations[abbreviation] = newExpansion;
-					this.plugin.saveSettings()
+					this.plugin.settings.abbreviations[abbreviation].value = newExpansion;
+					await this.plugin.saveSettings()
 				},
+				onDisable: async (isEnabled: boolean) => {
+					this.plugin.settings.abbreviations[abbreviation].isEnabled = isEnabled;
+					await this.plugin.saveSettings()
+					this.display();
+				}
 			})
 		})
 

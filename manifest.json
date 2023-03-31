@@ -6,5 +6,5 @@
 	"description": "This plugin allows you to create abbreviations that will be expanded after hitting `Space`.",
 	"author": "Yann POMIE (WoodenMaiden)",
 	"authorUrl": "https://github.com/WoodenMaiden/obsidian-abbreviations",
-	"isDesktopOnly": false
+	"isDesktopOnly": true
 }

@@ -1,10 +1,15 @@
 import { Setting } from "obsidian";
 import { debounce } from 'lodash';
 
+export interface Expansion {
+	value: string;
+	isEnabled: boolean;
+}
 
 export type ExpansionEntrySettingParameters = {
 	abbreviation: string;
-	expansion: string;
+	expansion: Expansion;
+	onDisable?: (value: boolean) => unknown;
 	onRemove?: () => unknown;
 	onAbbreviationEdit?: (value: string, oldValue: string) => unknown;
 	onExpansionEdit?: (value: string, oldValue: string) => unknown;
@@ -12,7 +17,8 @@ export type ExpansionEntrySettingParameters = {
 
 export class ExpansionEntrySetting extends Setting {
 	abbreviation: string;
-	expansion: string;
+	expansion: Expansion;
+	enabled: boolean;
 
 	constructor(elt: HTMLElement, opt: ExpansionEntrySettingParameters) {
 		super(elt);
@@ -21,7 +27,12 @@ export class ExpansionEntrySetting extends Setting {
 
 		const emptyFunction = (...args: never) => {};
 
-		this.addText((textAreaAbbrev) =>
+		this.addToggle((toggle) =>
+			toggle
+				.setValue(this.expansion.isEnabled)
+				.onChange(opt.onDisable ?? emptyFunction)
+			)
+			.addText((textAreaAbbrev) =>
 				textAreaAbbrev
 					.setPlaceholder("Abbreviation")
 					.setValue(this.abbreviation)
@@ -31,18 +42,20 @@ export class ExpansionEntrySetting extends Setting {
 							emptyFunction
 						, 750)
 					)
+					.setDisabled(!this.expansion.isEnabled)
 			)
 			// Expansion field
 			.addText((textAreaExpansion) =>
 				textAreaExpansion
 					.setPlaceholder("Meaning")
-					.setValue(this.expansion)
+					.setValue(this.expansion.value)
 					.onChange(
 						debounce((value: string) => (opt.onExpansionEdit)?
-							opt.onExpansionEdit(value, this.expansion) :
+							opt.onExpansionEdit(value, this.expansion.value) :
 							emptyFunction
 						, 750)
 					)
+					.setDisabled(!this.expansion.isEnabled)
 			)
 			// Remove button
 			.addExtraButton((removeButton) =>
@@ -50,14 +63,14 @@ export class ExpansionEntrySetting extends Setting {
 					.setIcon("cross")
 					.setTooltip("Remove")
 					.onClick(opt.onRemove ?? emptyFunction)
-			);
+			)
 	}
 
 	public get getAbbreviation(): string {
 		return this.abbreviation;
 	}
 
-	public get getExpansion(): string {
+	public get getExpansion(): Expansion {
 		return this.expansion;
 	}
 }
