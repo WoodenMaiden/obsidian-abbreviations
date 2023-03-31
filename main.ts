@@ -21,7 +21,7 @@ interface AbbreviationLocation {
 
 const DEFAULT_SETTINGS: AbbreviationPluginSettings = {
 	abbreviations: {
-		'e.g.': 'for example',
+		'eg.': 'for example',
 		'atm' : 'at the moment',
 		'imo' : 'in my opinion',
 		'w/'  : 'with',
@@ -104,8 +104,6 @@ export default class AbbreviationPlugin extends Plugin {
 			const position = editor.getCursor()
 																					
 			const line = editor.getLine(position.line).substring(0, position.ch) 
-
-			console.log(`line: "${line}"\npos: ${JSON.stringify(position)}`)
 			
 			if (
 				event.code == 'Space' && this.settings.eventsTriggeringExpand === 'ON_SPACE'
@@ -120,10 +118,6 @@ export default class AbbreviationPlugin extends Plugin {
 
 			}
 		})
-	}
-
-	onunload() {
-
 	}
 
 	async loadSettings() {
@@ -181,10 +175,7 @@ class AbbreviationSettingTab extends PluginSettingTab {
 	display(): void {
 		const {containerEl} = this;
 
-		console.log('displaying settings tab', this.plugin.settings)
-		
 		containerEl.empty();
-
 		containerEl.createEl('h2', {text: 'Abbreviations Plugin - Settings'});
 
 		new Setting(containerEl)
@@ -207,18 +198,10 @@ class AbbreviationSettingTab extends PluginSettingTab {
 			.addButton(addButton => 
 				addButton
 					.setIcon('plus')
-					.onClick(async () => {
+					.onClick(() => {
 						console.log('add button clicked')
 						this.plugin.settings.abbreviations[''] = '';
 						this.display();
-					})
-			)
-			.addExtraButton(saveButton =>
-				saveButton
-					.setIcon('save')
-					.setTooltip('Save')
-					.onClick(async () => {
-						this.plugin.saveSettings();
 					})
 			)
 			.addExtraButton(resetButton =>
@@ -229,6 +212,7 @@ class AbbreviationSettingTab extends PluginSettingTab {
 						this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS);
 						await this.plugin.saveSettings();
 						this.display();
+						this.plugin.saveSettings()
 					})
 			);
 
@@ -239,8 +223,26 @@ class AbbreviationSettingTab extends PluginSettingTab {
 
 			new ExpansionEntrySetting(containerEl, {
 				abbreviation,
-				expansion
+				expansion,
+				onRemove: async () => {
+					delete this.plugin.settings.abbreviations[abbreviation];
+					this.display();
+					this.plugin.saveSettings()
+				},
+				onAbbreviationEdit: async (newAbbreviation: string, oldAbbreviation: string) => {
+					this.plugin.settings.abbreviations[newAbbreviation] = this.plugin.settings.abbreviations[abbreviation];
+					delete this.plugin.settings.abbreviations[oldAbbreviation];
+					this.display();
+					this.plugin.saveSettings()
+				},
+				onExpansionEdit: async (newExpansion: string) => {
+					this.plugin.settings.abbreviations[abbreviation] = newExpansion;
+					this.plugin.saveSettings()
+				},
 			})
 		})
+
+		delete this.plugin.settings.abbreviations[''];
+		console.table(this.plugin.settings)
 	}
 }

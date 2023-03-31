@@ -1,12 +1,13 @@
 import { Setting } from "obsidian";
+import { debounce } from 'lodash';
+
 
 export type ExpansionEntrySettingParameters = {
 	abbreviation: string;
 	expansion: string;
-	onSave?: () => never;
-	onRemove?: () => never;
-	onEdit?: () => never;
-	onReset?: () => never;
+	onRemove?: () => unknown;
+	onAbbreviationEdit?: (value: string, oldValue: string) => unknown;
+	onExpansionEdit?: (value: string, oldValue: string) => unknown;
 };
 
 export class ExpansionEntrySetting extends Setting {
@@ -22,16 +23,26 @@ export class ExpansionEntrySetting extends Setting {
 
 		this.addText((textAreaAbbrev) =>
 				textAreaAbbrev
-					.setPlaceholder("abbreviation")
+					.setPlaceholder("Abbreviation")
 					.setValue(this.abbreviation)
-					.onChange(opt.onEdit ?? emptyFunction)
+					.onChange(
+						debounce((value: string) => (opt.onAbbreviationEdit)? 
+							opt.onAbbreviationEdit(value, this.abbreviation) : 
+							emptyFunction
+						, 750)
+					)
 			)
 			// Expansion field
 			.addText((textAreaExpansion) =>
 				textAreaExpansion
 					.setPlaceholder("Meaning")
 					.setValue(this.expansion)
-					.onChange(opt.onEdit ?? emptyFunction)
+					.onChange(
+						debounce((value: string) => (opt.onExpansionEdit)?
+							opt.onExpansionEdit(value, this.expansion) :
+							emptyFunction
+						, 750)
+					)
 			)
 			// Remove button
 			.addExtraButton((removeButton) =>
