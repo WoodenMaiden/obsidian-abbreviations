@@ -22,6 +22,7 @@ export class ExpansionEntrySetting extends Setting {
 
 	constructor(elt: HTMLElement, opt: ExpansionEntrySettingParameters) {
 		super(elt);
+		elt.addClass("center-h");
 		this.abbreviation = opt.abbreviation;
 		this.expansion = opt.expansion;
 

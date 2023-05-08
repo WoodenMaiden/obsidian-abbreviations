@@ -7,8 +7,9 @@ If your plugin does not need CSS, delete this file.
 
 */
 
-.center {
+.center-h {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
 }

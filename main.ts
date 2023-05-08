@@ -153,7 +153,7 @@ class AbbreviationSettingTab extends PluginSettingTab {
 		const {containerEl} = this;
 
 		containerEl.empty();
-		containerEl.createEl('h2', {text: 'Abbreviations Plugin - Settings'});
+		containerEl.createEl('h1', {text: 'Abbreviations Plugin - Settings'});
 
 		new Setting(containerEl)
 			.setName('Abbreviations')
@@ -184,9 +184,10 @@ class AbbreviationSettingTab extends PluginSettingTab {
 
 
 		// Here goes all the abbreviations entries
+		const listEl = containerEl.createEl("ul")
 		Object.entries(this.plugin.settings.abbreviations).forEach((entry) => {
 			const [ abbreviation, expansion ] = entry;
-			new ExpansionEntrySetting(containerEl, {
+			new ExpansionEntrySetting(listEl, {
 				abbreviation,
 				expansion,
 				onRemove: async () => {
