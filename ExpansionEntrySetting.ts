@@ -1,5 +1,5 @@
-import { Setting } from "obsidian";
-import { debounce } from 'lodash';
+import { Setting, debounce} from "obsidian";
+
 
 export interface Expansion {
 	value: string;
@@ -40,7 +40,7 @@ export class ExpansionEntrySetting extends Setting {
 						debounce((value: string) => (opt.onAbbreviationEdit)? 
 							opt.onAbbreviationEdit(value, this.abbreviation) : 
 							emptyFunction
-						, 750)
+						, 750, true)
 					)
 					.setDisabled(!this.expansion.isEnabled)
 			)

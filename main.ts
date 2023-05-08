@@ -1,17 +1,17 @@
-import { App, DropdownComponent, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, EditorPosition, Setting } from 'obsidian';
+import {
+	App, 
+	MarkdownView, 
+	Plugin, 
+	PluginSettingTab, 
+	EditorPosition, 
+	Setting
+} from 'obsidian';
+
 import { Expansion, ExpansionEntrySetting } from 'ExpansionEntrySetting';
 
 
-type EventsTriggeringExpand = 'ON_SPACE' | 'ON_ENTER';
-
-const EventsTriggeringExpandMap = new Map<EventsTriggeringExpand, string>([
-	['ON_SPACE', 'When hitting Space'],
-	['ON_ENTER', 'When hitting Enter']
-]); 
-
 interface AbbreviationPluginSettings {
 	abbreviations: Record<string, Expansion>;
-	eventsTriggeringExpand: EventsTriggeringExpand;
 }
 
 interface AbbreviationLocation {
@@ -66,7 +66,6 @@ const DEFAULT_SETTINGS: AbbreviationPluginSettings = {
 			isEnabled: true
 		}
 	},
-	eventsTriggeringExpand: 'ON_SPACE',
 }
 
 export default class AbbreviationPlugin extends Plugin {
@@ -100,7 +99,6 @@ export default class AbbreviationPlugin extends Plugin {
 		} while (wordStart > 0);
 		
 		const word = line.substring(wordStart, position.ch);
-		console.log(`word: "${word}"`)
 		
 		if (word in this.settings.abbreviations)
 			return {
@@ -114,16 +112,6 @@ export default class AbbreviationPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'choose-abbreviation-expansion-mode',
-			name: 'Choose how to expand abbreviations',
-			callback: () => {
-				new ChooseAbbreviationExpansionModal(this.app, this).open();
-			}
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new AbbreviationSettingTab(this.app, this));
 
 		this.registerDomEvent(document, 'keydown', (event: KeyboardEvent) => {
@@ -136,10 +124,7 @@ export default class AbbreviationPlugin extends Plugin {
 																					
 			const line = editor.getLine(position.line).substring(0, position.ch) 
 			
-			if (
-				event.code == 'Space' && this.settings.eventsTriggeringExpand === 'ON_SPACE'
-//				|| event.code == 'Enter' && this.settings.eventsTriggeringExpand === 'ON_ENTER'
-			) {
+			if (event.code == 'Space') {
 				const abbreviationLocation = this.detectAbbreviation(line, position);
 				console.log(`abbreviation: ${JSON.stringify(abbreviationLocation)}`)
 				if (abbreviationLocation?.abbreviation.isEnabled) {
@@ -160,41 +145,6 @@ export default class AbbreviationPlugin extends Plugin {
 	}
 }
 
-class ChooseAbbreviationExpansionModal extends Modal {
-	plugin: AbbreviationPlugin;
-	
-	constructor(app: App, plugin: AbbreviationPlugin) {
-		super(app);
-		this.plugin = plugin;
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		const center = contentEl.createEl('div', {cls: ".center"} );
-		
-		new DropdownComponent(center)
-			.addOptions(
-				Object.fromEntries(EventsTriggeringExpandMap)
-			)
-			.setValue(this.plugin.settings.eventsTriggeringExpand)
-			.onChange(async (value: EventsTriggeringExpand) => {
-				this.plugin.settings.eventsTriggeringExpand = value;
-				try {
-					await this.plugin.saveSettings();
-					new Notice('Settings changed ✅!');
-				} catch (error) {
-					new Notice('Error when saving settings! Check the logs');
-					console.error(error);
-				}
-				this.close()
-			})
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
 
 class AbbreviationSettingTab extends PluginSettingTab {
 	plugin: AbbreviationPlugin;
@@ -208,20 +158,6 @@ class AbbreviationSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 		containerEl.createEl('h2', {text: 'Abbreviations Plugin - Settings'});
-
-		new Setting(containerEl)
-			.setName('Event triggering expand')
-			.setDesc('Event that triggers the expansion of abbreviations')
-			.addDropdown(dropdown =>
-				dropdown.addOptions(
-					Object.fromEntries(EventsTriggeringExpandMap)
-				)
-				.setValue(this.plugin.settings.eventsTriggeringExpand)
-				.onChange(async (value: EventsTriggeringExpand) => {
-					this.plugin.settings.eventsTriggeringExpand = value;
-					await this.plugin.saveSettings();
-				})
-			);
 
 		containerEl.createEl('h3', {text: 'Abbreviations list'});
 		
