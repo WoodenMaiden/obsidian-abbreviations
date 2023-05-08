@@ -4,7 +4,8 @@ import {
 	Plugin, 
 	PluginSettingTab, 
 	EditorPosition, 
-	Setting
+	Setting,
+	Notice
 } from 'obsidian';
 
 import { Expansion, ExpansionEntrySetting } from 'ExpansionEntrySetting';
@@ -45,26 +46,18 @@ const DEFAULT_SETTINGS: AbbreviationPluginSettings = {
 			value: 'I love you',
 			isEnabled: true
 		},
-		'k8s' : {
-			value: 'Kubernetes',
+		'btw' : {
+			value: 'by the way',
 			isEnabled: true
 		},
-		'rs'  : {
-			value: 'Rust',
+		'afaik': {
+			value: 'as far as I know',
 			isEnabled: true
 		},
-		'js'  : { 
-			value: 'JavaScript',
+		'rn'  : {
+			value: 'right now',
 			isEnabled: true
-		},
-		'ts'  : {
-			value: 'TypeScript',
-			isEnabled: true
-		},
-		'py'  : {
-			value: 'Python',
-			isEnabled: true
-		}
+		}	
 	},
 }
 
@@ -100,7 +93,11 @@ export default class AbbreviationPlugin extends Plugin {
 		
 		const word = line.substring(wordStart, position.ch);
 		
-		if (word in this.settings.abbreviations)
+		if (
+			word !== "" && 
+			this.settings.abbreviations[word]?.value && 
+			word in this.settings.abbreviations
+		)
 			return {
 				position: { line: position.line, ch: wordStart },
 				abbreviation: this.settings.abbreviations[word]
@@ -126,7 +123,6 @@ export default class AbbreviationPlugin extends Plugin {
 			
 			if (event.code == 'Space') {
 				const abbreviationLocation = this.detectAbbreviation(line, position);
-				console.log(`abbreviation: ${JSON.stringify(abbreviationLocation)}`)
 				if (abbreviationLocation?.abbreviation.isEnabled) {
 					view.editor.replaceRange(abbreviationLocation.abbreviation.value, abbreviationLocation.position, position);
 					return;
@@ -159,8 +155,6 @@ class AbbreviationSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl('h2', {text: 'Abbreviations Plugin - Settings'});
 
-		containerEl.createEl('h3', {text: 'Abbreviations list'});
-		
 		new Setting(containerEl)
 			.setName('Abbreviations')
 			.setDesc('Add abbreviations to be replaced in your notes')
@@ -168,8 +162,12 @@ class AbbreviationSettingTab extends PluginSettingTab {
 				addButton
 					.setIcon('plus')
 					.onClick(() => {
-						console.log('add button clicked')
-						this.plugin.settings.abbreviations[''].value = '';
+						if ("" in this.plugin.settings.abbreviations) return;
+
+						this.plugin.settings.abbreviations[''] = {
+							value: '',
+							isEnabled: true
+						};
 						this.display();
 					})
 			)
@@ -197,13 +195,28 @@ class AbbreviationSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings()
 				},
 				onAbbreviationEdit: async (newAbbreviation: string, oldAbbreviation: string) => {
+					newAbbreviation = newAbbreviation.trim();
+					if (newAbbreviation in this.plugin.settings.abbreviations) {
+						new Notice(`⚠️ Abbreviation ${newAbbreviation} already exists\nThis change will not be saved`);
+						return;
+					}
+						
+					
 					this.plugin.settings.abbreviations[newAbbreviation] = this.plugin.settings.abbreviations[abbreviation];
 					delete this.plugin.settings.abbreviations[oldAbbreviation];
+					
 					this.display();
 					await this.plugin.saveSettings()
 				},
 				onExpansionEdit: async (newExpansion: string) => {
+					newExpansion = newExpansion.trim();
 					this.plugin.settings.abbreviations[abbreviation].value = newExpansion;
+
+					if (!newExpansion) {
+						new Notice(`⚠️ Expansion cannot be empty\nThis change will be saved but not applied`);
+						return;
+					}
+					
 					await this.plugin.saveSettings()
 				},
 				onDisable: async (isEnabled: boolean) => {
@@ -213,8 +226,5 @@ class AbbreviationSettingTab extends PluginSettingTab {
 				}
 			})
 		})
-
-		delete this.plugin.settings.abbreviations[''];
-		console.table(this.plugin.settings)
 	}
 }
