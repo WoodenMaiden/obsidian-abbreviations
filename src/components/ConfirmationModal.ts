@@ -10,7 +10,7 @@ export class ConfirmationModal extends Modal {
 
     onOpen() {
         const { contentEl } = this;
-        contentEl.createEl("h2", { text: "Are you sure?" });
+        contentEl.createEl("h2", { text: "🛑 Are you sure?" });
         contentEl.createEl("p", { text: "This will reset all your settings to default." });
         contentEl.createEl("p", { text: "Every changes you made so far will be undone" });
         

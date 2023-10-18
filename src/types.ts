@@ -4,6 +4,7 @@ export interface Expansion {
 	value: string;
 	isEnabled: boolean;
 	position: number;
+	isCaseSensitive?: boolean;
 }
 
 export interface AbbreviationPluginSettings {

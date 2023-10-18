@@ -9,12 +9,12 @@ export type ExpansionEntrySettingParameters = {
 	onRemove?: () => unknown;
 	onAbbreviationEdit?: (value: string, oldValue: string) => unknown;
 	onExpansionEdit?: (value: string, oldValue: string) => unknown;
+	onCaseSensitiveChange?: () => unknown;
 };
 
 export class ExpansionEntrySetting extends Setting {
 	abbreviation: string;
 	expansion: Expansion;
-	enabled: boolean;
 
 	constructor(elt: HTMLElement, opt: ExpansionEntrySettingParameters) {
 		super(elt);
@@ -22,8 +22,7 @@ export class ExpansionEntrySetting extends Setting {
 		this.abbreviation = opt.abbreviation;
 		this.expansion = opt.expansion;
 
-		const emptyFunction = (...args: never) => {};
-
+		const emptyFunction = (..._: never) => {};
 		this.addToggle((toggle) =>
 			toggle
 				.setValue(this.expansion.isEnabled)
@@ -54,8 +53,17 @@ export class ExpansionEntrySetting extends Setting {
 					)
 					.setDisabled(!this.expansion.isEnabled)
 			)
+			// case sensitive button
+			.addButton(caseButton => {
+				caseButton
+					.setIcon("case-sensitive")
+					.setTooltip("Case sensitive")
+					.onClick(opt.onCaseSensitiveChange ?? emptyFunction)
+
+				if (this.expansion.isCaseSensitive) caseButton.setClass("turned-on") 
+			})
 			// Remove button
-			.addExtraButton((removeButton) =>
+			.addExtraButton(removeButton =>
 				removeButton
 					.setIcon("cross")
 					.setTooltip("Remove")

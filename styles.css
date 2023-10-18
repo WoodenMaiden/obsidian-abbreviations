@@ -10,6 +10,10 @@ If your plugin does not need CSS, delete this file.
 .center-h {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-around;
     align-items: center;
+}
+
+.turned-on {
+    color: var(--interactive-accent);
 }

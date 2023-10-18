@@ -50,15 +50,20 @@ export default class AbbreviationPlugin extends Plugin {
 		} while (wordStart > 0);
 		
 		const word = line.substring(wordStart, position.ch);
+		const wordAbbrv = Object.keys(this.settings.abbreviations)
+			.find(k => k.toLocaleLowerCase() === word.toLocaleLowerCase())
+
+		if (!wordAbbrv) return null;
+
+		console.log(wordAbbrv)
+
+		const wordEntry = this.settings.abbreviations[wordAbbrv];
+		const sameCase = word === wordAbbrv;
 		
-		if (
-			word !== "" && 
-			this.settings.abbreviations[word]?.value && 
-			word in this.settings.abbreviations
-		)
+		if (word !== "" && wordEntry?.value && (sameCase || !wordEntry.isCaseSensitive))
 			return {
 				position: { line: position.line, ch: wordStart },
-				abbreviation: this.settings.abbreviations[word]
+				abbreviation: this.settings.abbreviations[wordAbbrv]
 			};
 		
 		return null;
@@ -168,7 +173,7 @@ class AbbreviationSettingTab extends PluginSettingTab {
 
 
 		// Here goes all the abbreviations entries
-		const listEl = containerEl.createEl("ul")
+		const listEl = containerEl.createEl("ul");
 		Object.entries(this.plugin.settings.abbreviations)
 			.sort((a,b) => a[1].position - b[1].position)
 			.forEach((entry) => {
@@ -233,7 +238,14 @@ class AbbreviationSettingTab extends PluginSettingTab {
 						this.plugin.settings.abbreviations[abbreviation].isEnabled = isEnabled;
 						await this.plugin.saveSettings()
 						this.display();
-					}
+					},
+					onCaseSensitiveChange: async () =>{
+						this.plugin.settings.abbreviations[abbreviation].isCaseSensitive =
+							!this.plugin.settings.abbreviations[abbreviation].isCaseSensitive;
+
+						await this.plugin.saveSettings()
+						this.display();
+					},
 				})
 			})
 	}
