@@ -24,39 +24,48 @@ const DEFAULT_SETTINGS: AbbreviationPluginSettings = {
 	abbreviations: {
 		'eg.': {
 			value: 'for example',
-			isEnabled: true
+			isEnabled: true,
+			position: 0
 		},
 		'atm' : {
 			value: 'at the moment',
-			isEnabled: true
+			isEnabled: true,
+			position: 1
 		},
 		'imo' : {
 			value: 'in my opinion',
-			isEnabled: true
+			isEnabled: true,
+			position: 2
 		},
 		'w/'  : {
 			value: 'with',
-			isEnabled: true
+			isEnabled: true,
+			position: 3
 		},
 		'w/o' : {
 			value: 'without',
-			isEnabled: true
+			isEnabled: true,
+			position: 4
 		},
 		'ily' : {
 			value: 'I love you',
-			isEnabled: true
+			isEnabled: true,
+			position: 5
 		},
 		'btw' : {
 			value: 'by the way',
-			isEnabled: true
+			isEnabled: true,
+			position: 6
 		},
 		'afaik': {
 			value: 'as far as I know',
-			isEnabled: true
+			isEnabled: true,
+			position: 7
 		},
 		'rn'  : {
 			value: 'right now',
-			isEnabled: true
+			isEnabled: true,
+			position: 8
 		}	
 	},
 }
@@ -133,10 +142,18 @@ export default class AbbreviationPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings = { ...structuredClone(DEFAULT_SETTINGS), ...(await this.loadData())};
 	}
 
 	async saveSettings() {
+		console.log("Saving", this.settings);
+		await this.saveData(this.settings);
+	}
+
+	async resetSettings() {
+		console.log("Resetting!", this.settings)
+
+		this.settings = { ...structuredClone(DEFAULT_SETTINGS) };
 		await this.saveData(this.settings);
 	}
 }
@@ -161,13 +178,30 @@ class AbbreviationSettingTab extends PluginSettingTab {
 			.addButton(addButton => 
 				addButton
 					.setIcon('plus')
-					.onClick(() => {
+					.onClick(async () => {
 						if ("" in this.plugin.settings.abbreviations) return;
 
 						this.plugin.settings.abbreviations[''] = {
 							value: '',
-							isEnabled: true
+							isEnabled: true,
+							position: 0
 						};
+
+						const offsetted: Record<string, Expansion> = Object.fromEntries(
+							Object.entries(this.plugin.settings.abbreviations).map(
+								([abbreviation, expansion]) => {
+									return [abbreviation, {
+										...expansion,
+										position: !abbreviation? 
+											expansion.position: 
+											expansion.position + 1
+									}]
+								}
+						));
+
+						this.plugin.settings.abbreviations = offsetted;
+
+						await this.plugin.saveSettings()
 						this.display();
 					})
 			)
@@ -176,8 +210,7 @@ class AbbreviationSettingTab extends PluginSettingTab {
 					.setIcon('reset')
 					.setTooltip('Reset to defaults')
 					.onClick(async () => {
-						this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS);
-						await this.plugin.saveSettings();
+						await this.plugin.resetSettings();
 						this.display();
 					})
 			);
@@ -185,47 +218,72 @@ class AbbreviationSettingTab extends PluginSettingTab {
 
 		// Here goes all the abbreviations entries
 		const listEl = containerEl.createEl("ul")
-		Object.entries(this.plugin.settings.abbreviations).forEach((entry) => {
-			const [ abbreviation, expansion ] = entry;
-			new ExpansionEntrySetting(listEl, {
-				abbreviation,
-				expansion,
-				onRemove: async () => {
-					delete this.plugin.settings.abbreviations[abbreviation];
-					this.display();
-					await this.plugin.saveSettings()
-				},
-				onAbbreviationEdit: async (newAbbreviation: string, oldAbbreviation: string) => {
-					newAbbreviation = newAbbreviation.trim();
-					if (newAbbreviation in this.plugin.settings.abbreviations) {
-						new Notice(`⚠️ Abbreviation ${newAbbreviation} already exists\nThis change will not be saved`);
-						return;
-					}
-						
-					
-					this.plugin.settings.abbreviations[newAbbreviation] = this.plugin.settings.abbreviations[abbreviation];
-					delete this.plugin.settings.abbreviations[oldAbbreviation];
-					
-					this.display();
-					await this.plugin.saveSettings()
-				},
-				onExpansionEdit: async (newExpansion: string) => {
-					newExpansion = newExpansion.trim();
-					this.plugin.settings.abbreviations[abbreviation].value = newExpansion;
+		Object.entries(this.plugin.settings.abbreviations)
+			.sort((a,b) => a[1].position - b[1].position)
+			.forEach((entry) => {
+				const [ abbreviation, expansion ] = entry;
+				new ExpansionEntrySetting(listEl, {
+					abbreviation,
+					expansion,
+					onRemove: async () => {
+						delete this.plugin.settings.abbreviations[abbreviation];
 
-					if (!newExpansion) {
-						new Notice(`⚠️ Expansion cannot be empty\nThis change will be saved but not applied`);
-						return;
+						// update positions
+						const updated: Record<string, Expansion> = Object.fromEntries(
+							Object.entries(this.plugin.settings.abbreviations)
+							.filter(e => expansion.position < e[1].position)
+							.map(
+								([abbreviation, expansion]) => {
+									return [abbreviation, {
+										...expansion,
+										position: !abbreviation? 
+											expansion.position: 
+											expansion.position - 1
+									}]
+								}
+							)
+						) 
+
+						this.plugin.settings.abbreviations = { 
+							...this.plugin.settings.abbreviations, 
+							...updated 
+						};
+
+
+						this.display();
+						await this.plugin.saveSettings()
+					},
+					onAbbreviationEdit: async (newAbbreviation: string, oldAbbreviation: string) => {
+						newAbbreviation = newAbbreviation.trim();
+						if (newAbbreviation in this.plugin.settings.abbreviations) {
+							new Notice(`⚠️ Abbreviation ${newAbbreviation} already exists\nThis change will not be saved`);
+							return;
+						}
+							
+						
+						this.plugin.settings.abbreviations[newAbbreviation] = this.plugin.settings.abbreviations[abbreviation];
+						delete this.plugin.settings.abbreviations[oldAbbreviation];
+						
+						this.display();
+						await this.plugin.saveSettings()
+					},
+					onExpansionEdit: async (newExpansion: string) => {
+						newExpansion = newExpansion.trim();
+						this.plugin.settings.abbreviations[abbreviation].value = newExpansion;
+
+						if (!newExpansion) {
+							new Notice(`⚠️ Expansion cannot be empty\nThis change will be saved but not applied`);
+							return;
+						}
+						
+						await this.plugin.saveSettings()
+					},
+					onDisable: async (isEnabled: boolean) => {
+						this.plugin.settings.abbreviations[abbreviation].isEnabled = isEnabled;
+						await this.plugin.saveSettings()
+						this.display();
 					}
-					
-					await this.plugin.saveSettings()
-				},
-				onDisable: async (isEnabled: boolean) => {
-					this.plugin.settings.abbreviations[abbreviation].isEnabled = isEnabled;
-					await this.plugin.saveSettings()
-					this.display();
-				}
+				})
 			})
-		})
 	}
 }
