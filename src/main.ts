@@ -171,7 +171,15 @@ class AbbreviationSettingTab extends PluginSettingTab {
 					})
 			);
 
-
+		containerEl.createEl('hr')
+		containerEl.createEl('p', { text: 'Here you can define your abbreviations.'});
+		const listingFeatEl = containerEl.createEl('ul');
+		listingFeatEl.createEl('li', { text: 'The toggle button at the left of each entry allows you to enable/disable the abbreviation.'});
+		listingFeatEl.createEl('li', { text: 'The first text field at the center is the abbreviation itself.'});
+		listingFeatEl.createEl('li', { text: 'The second text field is its meaning, which will appear on your documents.'});
+		listingFeatEl.createEl('li', { text: 'The button at the right of each entry allows you to set if your abbreviation is case sentitive.'});
+		listingFeatEl.createEl('li', { text: 'The last button at the far right of an entry allows you to remove it.'});
+		
 		// Here goes all the abbreviations entries
 		const listEl = containerEl.createEl("ul");
 		Object.entries(this.plugin.settings.abbreviations)

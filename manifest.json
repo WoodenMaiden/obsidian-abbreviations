@@ -1,10 +1,10 @@
 {
-	"id": "obsidian-abbreviations-plugin",
+	"id": "abbreviations",
 	"name": "Abbreviations Plugin",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "This plugin allows you to create abbreviations that will be expanded after hitting `Space`.",
 	"author": "Yann POMIE (WoodenMaiden)",
-	"authorUrl": "https://github.com/WoodenMaiden/obsidian-abbreviations",
+	"authorUrl": "https://yann-pomie.fr",
 	"isDesktopOnly": true
 }
