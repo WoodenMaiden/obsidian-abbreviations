@@ -1,11 +1,6 @@
 import { Setting, debounce} from "obsidian";
 
-
-export interface Expansion {
-	value: string;
-	isEnabled: boolean;
-	position: number;
-}
+import { Expansion } from "../types";
 
 export type ExpansionEntrySettingParameters = {
 	abbreviation: string;
