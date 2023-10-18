@@ -16,6 +16,7 @@ import {
 } from './types';
 
 import { ExpansionEntrySetting } from './components/ExpansionEntrySetting';
+import { ConfirmationModal } from './components/ConfirmationModal';
 
 
 export default class AbbreviationPlugin extends Plugin {
@@ -158,8 +159,10 @@ class AbbreviationSettingTab extends PluginSettingTab {
 					.setIcon('reset')
 					.setTooltip('Reset to defaults')
 					.onClick(async () => {
-						await this.plugin.resetSettings();
-						this.display();
+						new ConfirmationModal(this.app, () => {
+							this.plugin.resetSettings()
+							this.display();
+						}).open();
 					})
 			);
 
