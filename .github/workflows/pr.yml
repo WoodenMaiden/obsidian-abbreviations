@@ -1,0 +1,58 @@
+name: PR ci
+
+on: 
+  pull_request: 
+    branches: 
+      - master
+      - main 
+    types: 
+      - edited
+      - synchronize
+      - opened
+      - ready_for_review
+      - reopened
+
+permissions: 
+  contents: read
+  pull-requests: write
+
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Add PR Comment
+        uses: mshick/add-pr-comment@v2
+        with: 
+          message: |
+            Hello @${{ github.actor }}! Thanks for contributing to the plugin!
+            
+            Please make sure you have read the [contributing guidelines](./Contributing.md).
+            
+            Your PR basically need 3 things to be merged:
+              - Your PR title need to follow the [conventional commits spec](https://www.conventionalcommits.org/en/v1.0.0/)
+              - It must transpile without error and be tested
+              - An approbation
+
+  check_commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title
+        uses: amannn/action-semantic-pull-request@v5.3.0
+  
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "18.x"
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Build
+        run: npm run build
+        
