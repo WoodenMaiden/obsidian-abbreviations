@@ -55,8 +55,6 @@ export default class AbbreviationPlugin extends Plugin {
 
 		if (!wordAbbrv) return null;
 
-		console.log(wordAbbrv)
-
 		const wordEntry = this.settings.abbreviations[wordAbbrv];
 		const sameCase = word === wordAbbrv;
 		
@@ -100,13 +98,10 @@ export default class AbbreviationPlugin extends Plugin {
 	}
 
 	async saveSettings() {
-		console.log("Saving", this.settings);
 		await this.saveData(this.settings);
 	}
 
 	async resetSettings() {
-		console.log("Resetting!", this.settings)
-
 		this.settings = { ...structuredClone(DEFAULT_SETTINGS) };
 		await this.saveData(this.settings);
 	}
@@ -124,7 +119,6 @@ class AbbreviationSettingTab extends PluginSettingTab {
 		const {containerEl} = this;
 
 		containerEl.empty();
-		containerEl.createEl('h1', {text: 'Abbreviations Plugin - Settings'});
 
 		new Setting(containerEl)
 			.setName('Abbreviations')
@@ -171,7 +165,6 @@ class AbbreviationSettingTab extends PluginSettingTab {
 					})
 			);
 
-		containerEl.createEl('hr')
 		containerEl.createEl('p', { text: 'Here you can define your abbreviations.'});
 		const listingFeatEl = containerEl.createEl('ul');
 		listingFeatEl.createEl('li', { text: 'The toggle button at the left of each entry allows you to enable/disable the abbreviation.'});
