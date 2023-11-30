@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps: 
       - name: Add PR Comment
-        uses: actions/first-interaction@v1.2.0
+        uses: actions/first-interaction@v1.3.0
         if: github.actor != 'dependabot[bot]'
         with: 
           repo-token: ${{ secrets.GITHUB_TOKEN }}
