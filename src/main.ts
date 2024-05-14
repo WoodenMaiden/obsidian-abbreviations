@@ -15,11 +15,16 @@ import {
 	Expansion
 } from './types';
 
+import Devlogger from './util/Devlogger';
+
 import { ExpansionEntrySetting } from './components/ExpansionEntrySetting';
 import { ConfirmationModal } from './components/ConfirmationModal';
 
 
 export default class AbbreviationPlugin extends Plugin {
+	@Devlogger()
+	private readonly logger: Console;
+	
 	settings: AbbreviationPluginSettings;
 
 	/**
@@ -55,6 +60,8 @@ export default class AbbreviationPlugin extends Plugin {
 
 		if (!wordAbbrv) return null;
 
+		this.logger.log(`Abbreviation detected!: ${wordAbbrv}`);
+
 		const wordEntry = this.settings.abbreviations[wordAbbrv];
 		const sameCase = word === wordAbbrv;
 		
@@ -73,6 +80,8 @@ export default class AbbreviationPlugin extends Plugin {
 		this.addSettingTab(new AbbreviationSettingTab(this.app, this));
 
 		this.registerDomEvent(document, 'keydown', (event: KeyboardEvent) => {
+
+			this.logger.trace("Key pressed: ", event.code);
 
 			const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 			if (!view) return;
