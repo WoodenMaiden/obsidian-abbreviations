@@ -1,5 +1,3 @@
-import { EditorPosition } from "obsidian";
-
 export interface Expansion {
 	value: string;
 	isEnabled: boolean;
@@ -12,7 +10,7 @@ export interface AbbreviationPluginSettings {
 }
 
 export interface AbbreviationLocation {
-	position: EditorPosition;
+	startingCharacter: number;
 	abbreviation: Expansion;
 }
 
