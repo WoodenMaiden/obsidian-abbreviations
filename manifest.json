@@ -1,7 +1,7 @@
 {
 	"id": "abbreviations",
 	"name": "Abbreviations expander",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"minAppVersion": "0.15.0",
 	"description": "Easily create abbreviations that will be expanded after hitting `Space`.",
 	"author": "Yann POMIE (WoodenMaiden)",
